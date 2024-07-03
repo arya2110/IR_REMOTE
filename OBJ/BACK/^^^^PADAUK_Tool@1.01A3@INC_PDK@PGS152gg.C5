@@ -1,0 +1,441 @@
+
+//	----------- IMPORTANT -------------
+//	Please don't change the follow code
+//	It only be used for internal engineer
+//	-----------------------------------
+
+.Assembly	INC_VER		01
+.Assembly	FPPA_NUM	1
+.Assembly	RAM_Size	0x80
+.Assembly	ROM_Size	600h
+.Assembly	EEPROM		0x80
+.Assembly	OTP_ID		2A8Ah
+.Assembly	BOOT_TYPE	4
+
+.Assembly	ASM_INSTR	SYM_85A
+	.Assembly	OPTION_REG	ROP	7	LPWM_Source	16MHz	32MHz
+	.Assembly	OPTION_REG	ROP	5 %5	TM2_Source	16MHz	32MHz
+	.Assembly	OPTION_REG	ROP	4	TM2_Bit		6BIT	7BIT
+	.Assembly	OPTION_REG	ROP	0	Interrupt_Src1	PB.0	PA.4
+	.Assembly	OPTION_REG	ROP	6	GPC_TM2		Disable	Enable
+	.Option_Help
+	{
+		GPC_TM2	: 	"GPC control TM2 output"
+	}
+
+	.Assembly	OPTION	0	Security	Enable	Disable
+	.Option_Help
+	{
+		Security	: 	"Security select"
+		Enable		: 	"Security 7/8 words Enable"
+		Disable		: 	"Security Disable"
+	}
+
+	.Assembly	OPTION	12	Bootup_Time	Slow	X	X	Fast
+
+	.Assembly	OPTION_REG	MISC2	5	Comparator_Edge		All_Edge	Rising_Edge		Falling_Edge
+//	.Assembly	OPTION_REG	MISC	+ 0x40		//	Low Drive
+	.Assembly	OPTION_VIRTUAL:8	LVR		X  4.0V  X  3.5V  X  X  3.0V  2.7V  2.5V  X  X  2.2V  X  2.0V  X  1.8V
+	.Assembly	OPTION_VIRTUAL	E2_Erase	Disable	Enable Init_EEPROM
+	.Option_Help
+	{
+		E2_Erase	: 	"Applies to EEPROM data initialization"
+		Disable		: 	"The EEPROM data will not be erased when it is Writing."
+		Enable		: 	"The EEPROM data will be erased to 0xFF when it is Writing."
+		Init_EEPROM :	"The EEPROM data will be initialized by .EEPROM {...} command."
+	}
+	.OPTION_RULE
+	{
+		IF	E2_Erase == Enable
+		{
+			.Assembly	SYS_Ref		PGS152_E2_Erase
+		}
+		ELSE
+		{
+			.Assembly	SYS_Ref
+
+			IF	E2_Erase == Init_EEPROM
+			{
+				.Writer		EEPROM		COMMAND
+			}
+		}
+	}
+	.Assembly	OPTION_LOW	1, 9, 10, 14 ~ 15
+
+	.Assembly	OPTION_DEFAULT	0x09FC
+	.Assembly	OTHER_HIGH
+
+.Assembly	ICE_INSTR	SYM_83B2
+	.Assembly	OPTION_REG	OPR2	1	%7	LPWM_Source	16MHz	32MHz
+	.Assembly	OPTION_REG	OPR2	5	%5	TM2_Source	16MHz	32MHz
+	.Assembly	OPTION_REG	OPR2	4	%4	TM2_Bit		6BIT	7BIT
+	.Assembly	OPTION_REG	OPR2	+8	//	TM2C : PB2 -> PB0
+	.Assembly	OPTION_REG	OPR21	0 %0	Interrupt_Src1	PB.0	PA.4
+
+	.Assembly	OPTION_REG	GPC2PWM	@	GPC_TM2		Enable = 0xC0	Disable = 0
+
+	.Assembly	OPTION_VIRTUAL	Security	Enable	Disable
+	.Assembly	OPTION_VIRTUAL	Bootup_Time	Slow	Fast
+
+	.Assembly	OPTION_REG	OPR20	5	Comparator_Edge		All_Edge	Rising_Edge		Falling_Edge
+	.Assembly	OPTION_VIRTUAL:8	LVR	X 4.0V X 3.5V X X 3.0V 2.7V 2.5V X X 2.2V X 2.0V X 1.8V
+	.Assembly	OPTION_VIRTUAL	E2_Erase	Disable	Enable Init_EEPROM
+	.Assembly	OPTION_LOW	7 ~ 8, 12, 14	//	[9:11] Ratio	[1]:ISP
+	.Assembly	OPTION_REG	OPR20	+0x06
+	.Assembly	OPTION_REG	PCDIER	+0
+	.Assembly	OPTION_DEFAULT	0xAE7F
+	.Assembly	OTHER_HIGH
+
+	#pragma		ICE_ISP (2604)
+
+//		EOSCR.X_9p5/X_12p5
+//		TM2C.PB0 (3->1)
+//		LVDC
+//		LPWMGxC.GPC_Enable
+//		OPR3
+//		ROP.GPC_TMx_LPWM
+/*
+.Assembly	ICE_INSTR	SYM_86A
+	.Assembly	OPTION_VIRTUAL	%7	LPWM_Source	16MHz	32MHz
+	.Assembly	OPTION_VIRTUAL	%5	TM2_Source	16MHz	32MHz
+	.Assembly	OPTION_VIRTUAL	%4	TM2_Bit		6BIT	7BIT
+	.Assembly	OPTION_VIRTUAL	GPC_TM2		Disable	Enable
+	.Assembly	OPTION_REG	ROP	0	Interrupt_Src1	PB.0	PA.4
+
+	.Assembly	OPTION_VIRTUAL	Security	Enable	Disable
+	.Assembly	OPTION_VIRTUAL	Bootup_Time	Slow	Fast
+	.Assembly	OPTION	15		Comparator_Edge		All_Edge	Rising_Edge		Falling_Edge
+	.Assembly	OPTION	0		LVR	4.0V	3.5V	3.0V	2.7V	2.5V	1.8V	2.2V	2.0V
+	.Assembly	OPTION_DEFAULT	0x0105	//	.Assembly	OPTION_HIGH	0, 2, 8
+	.Assembly	OTHER_LOW
+*/
+.Assembly	END_INSTR
+
+	FLAG		IO_RW		0x00
+		OV	IO_RW		FLAG.3
+		AC	IO_RW		FLAG.2
+		CF	IO_RW		FLAG.1
+		ZF	IO_RW		FLAG.0
+
+	SP		IO_RW		0x02
+
+	CLKMD		IO_RW		0x03
+		$ 7 ~ 5, 3 :	IHRC/4, IHRC/16, IHRC/2, IHRC/8,
+					X, ILRC/16, EOSC/4, IHRC/32,
+					EOSC/2, IHRC/64, EOSC/1, EOSC/8,
+					ILRC/4, X, ILRC/1
+		$ 4	:	X, En_IHRC
+		$ 2	:	X, En_ILRC
+		$ 1	:	X, En_WatchDog
+		$ 0	:	X, En_Reset
+
+	INTEN		IO_RW		0x04
+		$ 7	=	X
+		$ 6 :	X, TM2
+		$ 5	:	X, LPWM
+		$ 4	:	X, COMP
+		$ 3	:	X, EEW
+		$ 2 :	X, T16
+		$ 1 %0 :	X, PB0 | PA4
+		$ 0 :	X, PA0
+
+	INTRQ		IO_RXW		0x05
+		$ 7	=	X
+		$ 6 :	X, TM2
+		$ 5	:	X, LPWM
+		$ 4	:	X, COMP
+		$ 3	:	X, EEW
+		$ 2 :	X, T16
+		$ 1 %0 :	X, PB0 | PA4
+		$ 0 :	X, PA0
+
+	T16M		IO_RW		0x06
+		$ 7 ~ 5	:	STOP, SYSCLK, X, PA4_F, IHRC, EOSC, ILRC, PA0_F
+		$ 4 ~ 3	:	/1, /4, /16, /64
+		$ 2 ~ 0	:	BIT7,BIT8, BIT9, BIT10, BIT11, BIT12, BIT13, BIT14, BIT15
+
+	EOSCR		IO_WO		0x0A
+		$ 7	:	Disable, Enable
+//		$ 6 ~ 5	=	1	:	32KHZ
+		$ 4 ~ 3 :	XIn_0p, XIn_7p, XIn_9p5, XIn_12p5
+		$ 2 ~ 1 :	XOut_0p, XOut_7p, XOut_9p5, XOut_12p5
+		$ 0	:	X, DIS_LVD_BANDGAP
+
+	IHRCR		IO_WO		0x0B
+
+	PA		IO_RW		0x10 : 0xF9
+	PAC		IO_RW		0x11 : 0xF9
+	PAPH		IO_RW		0x12 : 0xF9
+	PAPL		IO_RW		0x13 : 0xF9
+
+	PB		IO_RW		0x14 : 0x81
+	PBC		IO_RW		0x15 : 0x81
+	PBPH		IO_RW		0x16 : 0x81
+	PBPL		IO_RW		0x17 : 0x81
+
+	PADIER		IO_WO:INIT	0x0D : 0xF9
+	PBDIER		IO_WO:INIT	0x0E : 0x81
+
+	INTEGS		IO_WO		0x0C
+		$ 4	:	BIT_R, BIT_F
+		$ 3 ~ 2	%0 :	PB0_B | PA4_B, PB0_R | PA4_R, PB0_F | PA4_F
+		$ 1 ~ 0	:	PA0_B, PA0_R, PA0_F
+
+	MISC		IO_WO		0x08
+		$ 6	=	0
+		$ 5	:	X, Fast_Wake_Up
+		$ 2	:	X, LVR_Disable
+	#if	_SYS(AT_EV)
+		$ 1 ~ 0	:	WDT_X, WDT_8K | WDT_16K, WDT_64K | WDT_256K		:	1	?
+	#else
+		$ 1 ~ 0	:	WDT_8K, WDT_16K, WDT_64K, WDT_256K
+	#endif
+
+	MISC2		IO_WO:OP	0x0F (-)	//(-, 0x66)
+		$ 6 ~ 5	:	Both, Rising, Falling	//	ref :	ICE_INSTR.OPTION_HIGH
+//	#if	_SYS(AT_ISP_ICE)
+//		$ 2 ~ 1	=	3
+//	#endif
+
+	TM2C		IO_RW		0x1C
+		$ 7 ~ 4	%5	:	STOP, SYSCLK, IHRC | IHRC*2, EOSC, ILRC, GPCRS, X, X,
+				PA0_R, PA0_F, PB0_R, PB0_F, PA4_R, PA4_F
+	#if	_SYS(AT_ISP_ICE)
+		$ 3 ~ 2	:	Disable, PB0, PA3
+	#else
+		$ 3 ~ 2	:	Disable, X, PA3, PB0
+	#endif
+		$ 1	:	Period, PWM
+		$ 0	:	X, Inverse
+
+	TM2CT		IO_RW		0x1D
+
+	TM2S		IO_WO		0x1E
+		$ 7	%4	:	8BIT, 6BIT | 7BIT
+		$ 6 ~ 5	:	/1, /4, /16, /64
+		$ 4 ~ 0	=	/1 ~ /32
+
+	TM2B		IO_WO		0x09
+
+	GPCC		IO_RW		0x18
+		GPC_Out	IO_RO		GPCC.6
+		$ 7	:	Disable, Enable
+		$ 6	R	X, Status | Out_High
+		$ 5	:	X, Sync_TM2
+		$ 4	:	X, Inverse
+		$ 3 ~ 1	:	N_PA3, N_PA4, BANDGAP, N_R, X, N_PB7
+		$ 0	:	P_R, P_PA4
+
+	GPCS		IO_WO		0x19
+		$ 7	:	X, Output		// Output to PA0
+		$ 6	:	X, Wakeup		//
+		$ 5 ~ 0	=	GPCS
+		/*	At bit 5 ~ 0, you can use the follow items
+				VDD*(9~24)/32
+				VDD*(1~16)/24
+				VDD*(9~24)/40
+				VDD*(1~16)/32
+
+                        Ex :    $ GPCS  Output, VDD*15/32
+                                $ GPCS  Output, VDD/2
+		*/
+
+	MISC_LVR		IO_WO:OP	0x1B
+		$ 7 ~ 4 :	1V8, 1V9, 2V, 2V1, 2V2, 2V3, 2V4, 2V5, 2V7, 3V, 3V15, 3V3, 3V5, 3V75, 4V, 4V5
+
+	LVDC	IO_RW		0x1F (-)
+		$ 7 ~ 2 W	V:50:1850 ~ 5000	//	1.85V ~ 5V  (WO:?w?])
+		$ 0	R	VDD_UP, VDD_DOWN
+
+	LPWMG0C		IO_RW		0x20
+		$ 7	:	X, GPC_Enable
+		$ 6	R	X, Status | Out_High
+		$ 5	:	X, Inverse
+		$ 4 :	LPWMG0, LPWM_GEN
+		$ 3 ~ 1	:	Disable, X, X, PA0
+		$ 0 :	GEN_XOR, GEN_OR
+
+	LPWMGCLK		IO_WO		0x21
+		$ 7	:	X, Enable
+		$ 6 ~ 4	:	/1, /2, /4, /8, /16, /32, /64, /128
+		$ 0	%7	:	SYSCLK, IHRC | IHRC*2
+
+	LPWMG0DTH		IO_WO		0x22
+	LPWMG0DTL		IO_WO		0x23 : 0xE0
+	.W_LIMIT	Order	WO	LPWMG0DTL, LPWMG0DTH
+	LPWMGCUBH	IO_WO		0x24
+	LPWMGCUBL	IO_WO		0x25 : 0xC0
+
+	LPWMG1C		IO_RW		0x26
+		$ 7	:	X, GPC_Enable
+		$ 6	R	X, Status | Out_High
+		$ 5	:	X, Inverse
+		$ 4	:	LPWMG1, LPWMG2
+		$ 3 ~ 1	:	Disable, X, X, PA4, PB7
+
+	LPWMG1DTH		IO_WO		0x28
+	LPWMG1DTL		IO_WO		0x29 : 0xE0
+	.W_LIMIT	Order	WO	LPWMG1DTL, LPWMG1DTH
+
+	LPWMG2C		IO_RW		0x2C
+		$ 7	:	X, GPC_Enable
+		$ 6	R	X, Status | Out_High
+		$ 5	:	X, Inverse
+		$ 4	:	LPWMG2, Toggle | /2
+		$ 3 ~ 1	:	Disable, X, X, PA3, X, PA5
+
+	LPWMG2DTH	IO_WO		0x2E
+	LPWMG2DTL	IO_WO		0x2F : 0xE0
+	.W_LIMIT	Order	WO	LPWMG2DTL, LPWMG2DTH
+
+	EERL		IO_RW		0x30
+	EERMC		IO_RW		0x31
+		$ 7		=	X
+		$ 6		:	X, Busy
+		$ 5		:	X, Time_Out
+	#if	_SYS(AT_ISP_ICE)
+		$ 1	:	Disable, Enable	:	1
+		$ 0	:	Program, Erase
+	#else
+		$ 4 ~ 0	=	X
+	#endif
+//	0x5A	Write 0x5A before each STEER to Enable EEPROM Byte Program
+//	0xA5	Write 0xA5 before each STEER to Enable EEPROM Page Erase
+
+	EEPUOP		IO_WO		0x32
+//		[7:4]		Page Erase Pulse = (n+1) ms	0001	0xF is invalid
+//		[3:0]		Byte Program Pulse = (n+1)*4us	0011	0xF is invalid
+
+	EEOPR5		IO_WO		0x33
+//		[7:5]		Erase Positive Voltage level	000	010: 8V, 011:8.5V, 100:9V, 101:9.5V
+//		[4:3]		Erase Negative Voltage level 	00	00: -6V, 01: -6.5V, 10: -7V, 11: -7.5V
+//		[2:0]		Erase current ratio level	011	
+
+	EEOPR6		IO_WO		0x34
+//		[2:0]		Read current ratio level	001	
+
+	EEOPR1		IO_WO		0x35
+//		[7]	0/1	EEPROM Disable / Enable
+//		[6]	0/1	IHRC 48MHz for EEPROM Disable / Enable
+//		[5]	0/1	Regulator for EEPROM read Enable / Disable
+//		[4:0]	0/1	EEPROM Page Erase Loop = (n+1) times	00001	0x1F is invalid
+
+	EEOPR2		IO_WO		0x36
+//		[7:3]	0/1	EEPROM Program Loop = (n+1) times	00001	0x1F is invalid
+//		[2:0]	00	EEPROM Read wait cycle = (n+1) system clock	010	0x7 is invalid
+
+	EEOPR3		IO_WO		0x37
+//		[7:5]	0/1	EEPROM Progarm Positive Voltage	000	010: 8V, 011:8.5V, 100:9V, 101:9.5V
+//		[4:3]	0/1	EEPROM Progarm Drain Voltage	00	10: 5V, 11: 5.5V
+//		[2:0]	11	EEPROM Program read current ratio	000	
+
+EEPROM_Initial	macro	adr
+	#ifb	<adr>
+		WORD	ee_adr;
+	#else
+		WORD	ee_adr @ adr;
+	#endif
+	#if		_SYS(At_Chip)
+//		EEOPR1 = 0b_1_1_1_11101;	// EEOPR1 : Enable EEPROM__IHRC__Reg__Page Erase Loop
+		EEOPR1 = 0b_1_1_0_11101;	// EEOPR1 : Enable EEPROM__IHRC__Reg__Page Erase Loop	//	230116 Modify
+		EEOPR2 = 0b_11101_001;      // EEOPR2 : pgm loop__Read Wait cycles
+		EEOPR3 = 0b_101_11_000;		// EEOPR3 : Pgm PosV__Pgm dV__pgm ratio
+		EEOPR5 = 0b_011_11_011;		// EEOPR5 : Erase PosV__Erase NegV__Erase ratio
+		EEOPR6 = 0b_00000_001;      // EEOPR6 : x__Read ratio
+		EEPuOP = 0b_0001_0111;      // EEPuOP : Page Erase Pulse__Program Pulse
+		IHRC_EPM = 0x3F;
+	#elif	_SYS(AT_ISP_ICE)
+		EEOPR1	=	0b_0_1_0_11101;	// x__IHRC__Reg__Page Erase Loop
+		EEOPR2	=	0b_11101_001;	// pgm loop__Read Wait cycles
+		EEOPR3	=	0b_010_10_110;	// Pgm PosV__Pgm dV__pgm ratio (8, 5.0)
+		EEOPR5	=	0b_010_11_011;	// Erase PosV__Erase NegV__Erase ratio (8.0, -7.5)
+		EEOPR6	=	0b_00000_001;	// X__Read ratio
+		EEPuOP	=	0b_0011_0010;	// Page Erase Pulse__Program Pulse (4ms, 12us)
+		IHRC_EPM	=	0x3F;
+		$ EERMC Enable;
+	#endif
+	endm
+
+#if		_SYS(At_Chip)
+	EEPROM_Enable	TEXTEQU		<EEOPR1 = 0b_1_1_0_11101;>	//
+	EEPROM_Disable	TEXTEQU		<EEOPR1 = 0b_0_0_0_11101;>	//	230626 Modify, for SYSCLK = ILRC
+
+	#define	Setup_EraseMode
+	#define	Setup_ProgramMode
+	#define	Run_Erase(p)		EERMC	=	0xA5;\
+								STEER	p
+	#define	Run_Program(p)		EERMC	=	0x5A;\
+								STEER	p
+	#define	Do_Erase(p)			Run_Erase(p)
+	#define	Do_Program(p)		Run_Program(p)
+
+#elif	_SYS(AT_ISP_ICE)
+	EEPROM_Enable	TEXTEQU		<$ EERMC Enable;>
+	EEPROM_Disable	TEXTEQU		<EERMC = 0;>
+
+	#define	Setup_EraseMode		$ EERMC Erase;
+	#define	Setup_ProgramMode	$ EERMC Program;
+	#define	Run_Erase(p)		STEER	p
+	#define	Run_Program(p)		STEER	p
+	#define	Do_Erase(p)			$ EERMC Erase;\
+								STEER	p
+	#define	Do_Program(p)		$ EERMC Program;\
+								STEER	p
+#else
+	EEPROM_Disable	TEXTEQU		<>
+	EEPROM_Enable	TEXTEQU		<>
+
+	#define	Setup_EraseMode
+	#define	Setup_ProgramMode
+	#define	Run_Erase(p)
+	#define	Run_Program(p)
+	#define	Do_Erase(p)
+	#define	Do_Program(p)
+#endif
+
+	BGTR		IO_RW		0x1A		//	[7:3] [R:0]
+
+	ILRCR		IO_WO		0x39		//	[7:4]
+
+//	ROP		IO_WO:OP		0x3A (-, 0x2A)
+	ROP		IO_WO:OP		0x3A (-)
+		$ 7	:	LPWM_16MHz, LPWM_32MHz
+		$ 6	:	PURE_TMx, GPC_TMx
+		$ 5	:	TMx_16MHz, TMx_32MHz
+		$ 4	:	TMx_6BIT, TMx_7BIT
+		$ 0	:	INT_PB0, INT_PA4
+
+	OPR3	IO_WO	0x3B (-)
+//		[6]	0	PA5 ~ 7, PB0, PB7 IOH / IOL current = 5 / 10 mA
+//			1	PA5 ~ 7, PB0, PB7 IOH / IOL current = 40 / 50 mA
+//		[4]	0	PA4 IOH / IOL current = 5 / 10 mA
+//			1	PA4 IOH / IOL current = 40 / 50 mA
+//		[2]	0	PA3 IOH / IOL current = 5 / 10 mA
+//			1	PA3 IOH / IOL current = 40 / 50 mA
+//		[0]	0	PA0 IOH / IOL current = 5 / 10 mA
+//			1	PA0 IOH / IOL current = 40 / 50 mA
+
+	IHRC_EPM	IO_WO		0x3C
+//		[7]	0/1	Timer16 clock source = IHRC16M / IHRC24M
+//		[5:0]	0/1	IHRC 48MHz frequency trimming
+
+#if	_SYS(AT_ISP_ICE)
+	.include	AT_ISP_ICE.INC
+#endif
+
+/*
+  	ICE bug
+		when use GPCC.Output, PA3 will be affect
+
+	ICE not support
+		CLKMD.ILRC/16
+		EOSCR.X_9p5/X_12p5
+		TM2C.PB0
+		TMxS.7BIT
+		X_Source.32MHz
+		LVDC
+		GPCC.N_PA6/N_PA7
+		LPWMxx
+		OPR3
+		EEOPRx
+*/
