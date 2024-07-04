@@ -10,7 +10,7 @@
 	.Code_Option	Bootup_Time	Fast
 	.Code_Option	Security	Enable		// Security 7/8 words Enable
 	.Code_Option	TM2_Bit		7BIT
-	.Code_Option	LVR		3.0V
+	.Code_Option	LVR		2.2V
 //}}PADAUK_CODE_OPTION
 
 //	----------- IMPORTANT -------------

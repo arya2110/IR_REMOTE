@@ -9,8 +9,8 @@
 	.Code_Option	LPWM_Source	16MHz
 	.Code_Option	Bootup_Time	Fast
 	.Code_Option	Security	Enable		// Security 7/8 words Enable
-	.Code_Option	TM2_Bit		6BIT
-	.Code_Option	LVR		3.5V
+	.Code_Option	TM2_Bit		7BIT
+	.Code_Option	LVR		2.5V
 //}}PADAUK_CODE_OPTION
 
 //	----------- IMPORTANT -------------

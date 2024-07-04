@@ -1,8 +1,14 @@
 ﻿#include	"extern.h"
+
 BYTE interrupt_flag = 0; 
-BYTE DATA_KEY_1 =	0x1;			//Data For KEY_1 (MSB first)
+BYTE DATA_KEY_1 = 0x1;    //Data For KEY_1 (MSB first)
+BYTE DATA_KEY_2	= 0x9;			//Data For KEY_2 (MSB first)
+BYTE DATA_KEY_3 = 0xD;			//Data For KEY_3 (MSB first)
+BYTE DATA_KEY_4	= 0xB;			//Data For KEY_4 (MSB first)
+BYTE DATA_KEY_5 = 0x3;			//Data For KEY_5 (MSB first)
 
 BYTE address1 = 0x00;
+
 void Delay_ms(BYTE ms_Count)
 {
     word i=0;
@@ -31,30 +37,47 @@ void sendFrame(BYTE address, BYTE command);
 
 void FPPA0(void)
 {
-  .ADJUST_IC SYSCLK = IHRC/4, IHRC = 16MHz, VDD = 3.3V; // Set system clock frequenc
-
+  .ADJUST_IC SYSCLK = IHRC/4, IHRC = 16MHz, VDD = 2.2V; // Set system clock frequenc
+  
   BIT LED : PA.3;
   $ LED OUT;  // set PA3 as the output
+
+  BIT KEY_1 :pa.6;
+  BIT KEY_2 :pa.7;
+  $  KEY_1       In, Pull;       //  configure Key_In as Input, Pull High
+  $  KEY_2       In, Pull;       //  configure Key_In as Input, Pull High
   //38khz freq timer
   $ timer TM2 , 1 ,/300;
     INTEN.6 = 1; // Enable the TIMER16 interrupt
+  
+  $ GPCS  Output, VDD*15/32;
+  
 
-	  
-        if(1)
-		{
-			sendFrame(address1,DATA_KEY_1);//send the frame
-            while(DATA_KEY_1==1)
-			{
-				sendRepeate();
-				DATA_KEY_1=0;
-			}
-		}
-		
    while (1) 
    {
-	 
+ 	 if(!KEY_1)							//check if the Key_1 is pressed (gpio is low)
+		{
 
-	}
+			sendFrame(address1,DATA_KEY_1);	//send the frame
+	 		while(!KEY_1)					//if the key is still pressed 
+			{
+			sendRepeate();					//send Repeate codes. 
+			}	
+
+		}
+		else if(!KEY_2)					//check if the Key_2 is pressed
+		{
+
+			sendFrame(address1,DATA_KEY_2);	//send the frame
+			while(!KEY_2)					//if the key is still pressed 
+			{
+			sendRepeate();					//send Repeate codes.
+			}
+		}
+     
+    	
+ 
+   }
 }
 
 void Timer_Start(BYTE x) {
@@ -165,46 +188,6 @@ void sendByte(BYTE bytes)	// this function is called only by the sendFrame , to 
 	}	
 }
 
-/*
-void sendByte(BYTE bytes)	// this function is called only by the sendFrame , to send each byte of data total 4bytes.
-{   
-   word	temp=bytes;
-   word tempcount=0;
-	BYTE  i=8;				//variable to hold the counter vlaue
-	 while(tempcount<8)
-		 {
-			 word mask = 1;
-             word i = 0;
-             while (i < tempcount)
-            {
-			   mask <<= 1;  //mask=mask<<1
-               i++;
-            }
-             // if(temp & (1<<tempcount)) bit manupltion not work so use mask varible
-            if(temp & mask)
-			{   Timer_Start(1);
-                led=1;
-                //delay_us(561);
-				.delay(1804);
-				Timer_Start(0);	
-
-	            led=0;
-		        Delay_ms(1);
-
-			}
-			else
-			{  Timer_Start(1);
-                led=1;
-				Timer_Start(0);
-                .delay(1804);
-	            led=0;
-		        .delay(1804);
-            }
-            tempcount++;
-			
-		  }
-}
-*/
 void sendRepeate()
 {
 	//TMR2 = 0x00;					//clear the TMR2 register before we start generating 38Khz Signal on the GPIO
