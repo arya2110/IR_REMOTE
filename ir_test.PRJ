@@ -14,7 +14,7 @@ Break7=Au 0000 00FF
 Break8=Au 0000 00FF
 [Ctrl_Break]
 Mark=51 1
-ICE=0 6 2 CE4
+ICE=0 6 2 1388
 [INI]
 PROJECT=PRE_FILE
 [LINKS]
@@ -23,6 +23,7 @@ PROJECT=PRE_FILE
 ~extern.h
 [DEPEND]
 ~$:INC_PDK\PGS152.INC
+~$:INC_PDK\AT_ISP_ICE.INC
 ~ir_test.PRE
 ~$:Help\Key\timer.C
 [PRE]

@@ -23,7 +23,6 @@ PROJECT=PRE_FILE
 ~extern.h
 [DEPEND]
 ~$:INC_PDK\PGS152.INC
-~$:INC_PDK\AT_ISP_ICE.INC
 ~ir_test.PRE
 ~$:Help\Key\timer.C
 [PRE]
