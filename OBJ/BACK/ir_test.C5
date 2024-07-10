@@ -60,7 +60,7 @@ void FPPA0(void)
     BIT KEY_2 :pa.7;
     $  KEY_1       In;       //  configure Key_In as Input, Pull High
     $  KEY_2       In;       //  configure Key_In as Input, Pull High
-    PAPH  = 0b_1100_0000; // Port A Pull-High Register: enable pull-up on PA.6 and PA.7
+   // PAPH  = 0b_1100_0000; // Port A Pull-High Register: enable pull-up on PA.6 and PA.7
 	PADIER = 0b_1111_1001; 
 	//PAPH.6=1;
 	//PAPH.7=1;

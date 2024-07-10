@@ -58,11 +58,11 @@ void FPPA0(void)
 
     BIT KEY_1 :pa.6;
     BIT KEY_2 :pa.7;
-    $  KEY_1       In, Pull;       //  configure Key_In as Input, Pull High
-    $  KEY_2       In, Pull;       //  configure Key_In as Input, Pull High
+    $  KEY_1       In;       //  configure Key_In as Input, Pull High
+    $  KEY_2       In;       //  configure Key_In as Input, Pull High
 	PADIER = 0b_1111_1001; 
-	PAPL.6=0;
-	PAPL.7=0;
+	PAPH.6=1;
+	PAPH.7=1;
   //38khz freq timer
   $ timer TM2 , 1 ,/300;
     INTEN.6 = 1; // Enable the TIMER6 interrupt
