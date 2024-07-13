@@ -3,8 +3,8 @@
 //{{PADAUK_CODE_OPTION
 	.Code_Option	E2_Erase	Disable		// The EEPROM data will not be erased when it is Writing.
 	.Code_Option	Comparator_Edge	All_Edge
-	.Code_Option	GPC_TM2		Disable
-	.Code_Option	Interrupt_Src1	PB.0
+	.Code_Option	GPC_TM2		Enable
+	.Code_Option	Interrupt_Src1	PA.4
 	.Code_Option	TM2_Source	16MHz
 	.Code_Option	LPWM_Source	16MHz
 	.Code_Option	Bootup_Time	Fast
